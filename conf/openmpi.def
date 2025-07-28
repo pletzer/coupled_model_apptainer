@@ -1,0 +1,51 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%labels
+    Author Alexander Pletzer
+    Description Container with GNU compilers, OpenMPI, and CMake
+
+%post
+    # Update and install dependencies
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        gfortran \
+        gcc \
+        g++ \
+        cmake \
+        wget \
+        curl \
+        git \
+        libhwloc-dev \
+        libnuma-dev \
+        libevent-dev \
+        libssl-dev \
+        ca-certificates \
+        pkg-config \
+        python3 \
+        python3-pip
+
+    # Install OpenMPI from source
+    cd /opt
+    openmpi_version="4.1.5"
+    wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-${openmpi_version}.tar.gz
+    tar -xzf openmpi-${openmpi_version}.tar.gz
+    cd openmpi-${openmpi_version}
+    ./configure --prefix=/opt/openmpi
+    make -j$(nproc)
+    make install
+
+    # Clean up
+    rm -rf /opt/openmpi-${openmpi_version} /opt/openmpi-${openmpi_version}.tar.gz
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export PATH=/opt/openmpi/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/openmpi/lib:$LD_LIBRARY_PATH
+    export MANPATH=/opt/openmpi/share/man:$MANPATH
+
+%runscript
+    echo "Container with GNU compilers, OpenMPI, and CMake is ready."
+    exec "$@"
+
