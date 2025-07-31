@@ -1,0 +1,53 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%environment
+    # Set environment variables for Open MPI and PMIx
+    export PATH=/opt/openmpi/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/openmpi/lib:$LD_LIBRARY_PATH
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        g++ \
+        gfortran \
+        wget \
+        libslurm-dev \
+        hwloc libhwloc-dev  \
+        libevent-dev  \
+        libfabric-dev  \
+        flex \
+        python3 \
+        cmake \
+        libpmi2-0 libpmi2-0-dev \
+        ca-certificates
+
+    # Install PMIx
+    export PMIx_VERSION="4.2.0" # Or your desired PMIx version
+    wget https://github.com/openpmix/openpmix/releases/download/v${PMIx_VERSION}/pmix-${PMIx_VERSION}.tar.gz -O /tmp/pmix.tar.gz
+    tar -xzf /tmp/pmix.tar.gz -C /tmp/
+    cd /tmp/pmix-${PMIx_VERSION}
+    ./configure --prefix=/opt/pmix
+    make -j6
+    make install
+    rm -rf /tmp/pmix*
+
+    ls /usr/include/slurm/pmi2.h
+    ls /usr/lib/x86_64-linux-gnu/libpmi2.so
+    # OpenMPI wants libpmi2.so to be under /usr/lib64
+    ln -s /usr/lib/x86_64-linux-gnu/libpmi2.so /usr/lib64/libpmi2.so
+
+    # Install Open MPI with PMIx support
+    export OMPI_VERSION="4.1.5" # Or your desired Open MPI version
+    wget https://download.open-mpi.org/release/open-mpi/v${OMPI_VERSION%.*}/openmpi-${OMPI_VERSION}.tar.gz -O /tmp/openmpi.tar.gz
+    tar -xzf /tmp/openmpi.tar.gz -C /tmp/
+    cd /tmp/openmpi-${OMPI_VERSION}
+    ./configure --prefix=/opt/openmpi --with-pmix=/opt/pmix --with-pmi=/usr --with-slurm --with-libevent=/usr --with-hwloc=/usr --enable-mpi-cxx
+    #./configure --prefix=/opt/openmpi --with-pmix=/opt/pmix --with-pmi=/usr --with-slurm --with-libevent=/usr --with-hwloc=/usr --enable-mpi-cxx
+    make -j6
+    make install
+    rm -rf /tmp/openmpi*
+
+    # Clean up
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
