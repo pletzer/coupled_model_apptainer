@@ -8,6 +8,9 @@ project(ESMF_TwoComponentExample LANGUAGES Fortran)
 #   cmake -DESMF_DIR=/path/to/esmf .
 set(ESMF_DIR "/software" CACHE PATH "Path to ESMF installation directory")
 
+# NetCDF
+set(NETCDF_LIBRARY "/software/lib/libnetcdf.so")
+set(NETCDFF_LIBRARY "/software/lib/libnetcdff.so")
 # -------------------------------------------------------------------------
 # Find MPI (required by ESMF)
 find_package(MPI REQUIRED Fortran)
@@ -47,10 +50,12 @@ target_include_directories(esmf_two_component_example PRIVATE
 # Link libraries
 target_link_libraries(esmf_two_component_example PRIVATE
   ${ESMF_LIBRARY}
+  ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}
   MPI::MPI_Fortran
 )
 
 # Optionally show diagnostics
+message(STATUS "NetCDF libraries: ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}")
 message(STATUS "ESMF library: ${ESMF_LIBRARY}")
 message(STATUS "ESMF include: ${ESMF_INC_DIR}")
 message(STATUS "ESMF module:  ${ESMF_MOD_DIR}")
