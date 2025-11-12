@@ -9,8 +9,9 @@ project(ESMF_TwoComponentExample LANGUAGES Fortran)
 set(ESMF_DIR "/software" CACHE PATH "Path to ESMF installation directory")
 
 # NetCDF
-set(NETCDF_LIBRARY "/software/lib/libnetcdf.so")
-set(NETCDFF_LIBRARY "/software/lib/libnetcdff.so")
+set(NETCDF_LIBRARY "/software/lib/libnetcdf.a")
+set(PNETCDF_LIBRARY "/software/lib/libpnetcdf.a")
+set(NETCDFF_LIBRARY "/software/lib/libnetcdff.a")
 # -------------------------------------------------------------------------
 # Find MPI (required by ESMF)
 find_package(MPI REQUIRED Fortran)
@@ -50,12 +51,12 @@ target_include_directories(esmf_two_component_example PRIVATE
 # Link libraries
 target_link_libraries(esmf_two_component_example PRIVATE
   ${ESMF_LIBRARY}
-  ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}
+  ${PNETCDF_LIBRARY} ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}
   MPI::MPI_Fortran
 )
 
 # Optionally show diagnostics
-message(STATUS "NetCDF libraries: ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}")
+message(STATUS "NetCDF libraries: ${PNETCDF_LIBRARY} ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}")
 message(STATUS "ESMF library: ${ESMF_LIBRARY}")
 message(STATUS "ESMF include: ${ESMF_INC_DIR}")
 message(STATUS "ESMF module:  ${ESMF_MOD_DIR}")
