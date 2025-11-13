@@ -55,7 +55,7 @@ target_link_libraries(2comp_example PRIVATE
 # -------------------------------------------------------------------------
 # Build driver
 add_executable(2comp_time_example
-  driver.F90
+  esmfApp.F90 esmf.F90 
   atm.F90 ocn.F90
 )
 
