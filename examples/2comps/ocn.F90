@@ -134,7 +134,20 @@ module OCN
     type(ESMF_Grid)         :: gridIn
     type(ESMF_Grid)         :: gridOut
 
+    real(8) :: minCornerCoord(2), maxCornerCoord(2)
+    integer :: maxIndexAtm(2), maxIndexOcn(2), unit_num
+
+    namelist /domain/ minCornerCoord, maxCornerCoord
+    namelist /ocn/ maxIndexOcn
+    namelist /atm/ maxIndexAtm
+
     rc = ESMF_SUCCESS
+
+    ! read the namelist
+    open(newunit=unit_num, file='2comp_time_example.nml', status='old', iostat=rc)
+    read(unit_num, nml=domain, iostat=rc)
+    read(unit_num, nml=ocn, iostat=rc)
+    close(unit_num)
 
     ! query for importState and exportState
     call NUOPC_ModelGet(model, importState=importState, &
@@ -145,16 +158,26 @@ module OCN
       return  ! bail out
 
     ! create a Grid object for Fields
-    gridIn = ESMF_GridCreateNoPeriDimUfrm(maxIndex=(/100, 10/), &
-      minCornerCoord=(/10._ESMF_KIND_R8, 20._ESMF_KIND_R8/), &
-      maxCornerCoord=(/100._ESMF_KIND_R8, 200._ESMF_KIND_R8/), &
+    gridIn = ESMF_GridCreateNoPeriDimUfrm(maxIndex=maxIndexAtm, &
+      minCornerCoord=minCornerCoord, &
+      maxCornerCoord=maxCornerCoord, &
       coordSys=ESMF_COORDSYS_CART, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &
       rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    gridOut = gridIn ! for now out same as in
+
+    gridOut = ESMF_GridCreateNoPeriDimUfrm(maxIndex=maxIndexOcn, &
+      minCornerCoord=minCornerCoord, &
+      maxCornerCoord=maxCornerCoord, &
+      coordSys=ESMF_COORDSYS_CART, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &
+      rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
 
 #ifdef WITHIMPORTFIELDS
     ! importable field: air_pressure_at_sea_level

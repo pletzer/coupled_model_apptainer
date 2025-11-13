@@ -53,7 +53,10 @@ target_link_libraries(2comp_example PRIVATE
   curl xml2 z stdc++
 )
 # -------------------------------------------------------------------------
-# Build driver
+# Build 2comp_time_example
+
+# copy the namelist 
+configure_file("2comp_time_example.nml" "2comp_time_example.nml" COPYONLY) 
 add_executable(2comp_time_example
   esmfApp.F90 esmf.F90 
   atm.F90 ocn.F90
