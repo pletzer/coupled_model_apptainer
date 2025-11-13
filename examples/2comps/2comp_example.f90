@@ -52,7 +52,7 @@ program atm_ocean_coupling
   call ESMF_StateAdd(state_ocn, (/fb_ocn/), rc=rc)
 
   !------------------------------------------------------------
-  ! 3. Store regridding routes
+  ! 3. Compute the remapping weights
   call ESMF_FieldRegridStore(srcField=fld_atm_flux, dstField=fld_ocn_flux, routehandle=rh_atm2ocn, regridmethod=ESMF_REGRIDMETHOD_BILINEAR, rc=rc)
   call ESMF_FieldRegridStore(srcField=fld_ocn_sst, dstField=fld_atm_sst, routehandle=rh_ocn2atm, regridmethod=ESMF_REGRIDMETHOD_BILINEAR, rc=rc)
 

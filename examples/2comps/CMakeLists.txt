@@ -30,7 +30,7 @@ set(ESMF_MOD_DIR "/software/mod/modO/Linux.intel.64.intelmpi.default")
 set(ESMF_INC_DIR "/software/include")
 
 # -------------------------------------------------------------------------
-# Build executable
+# Build 2comp_example
 add_executable(2comp_example
   2comp_example.f90
 )
@@ -52,6 +52,31 @@ target_link_libraries(2comp_example PRIVATE
   MKL::MKL
   curl xml2 z stdc++
 )
+# -------------------------------------------------------------------------
+# Build driver
+add_executable(2comp_time_example
+  driver.F90
+  atm.F90 ocn.F90
+)
+
+# Include directories
+target_include_directories(2comp_time_example PRIVATE
+  ${ESMF_INC_DIR}
+  ${ESMF_MOD_DIR}
+  ${MPI_Fortran_INCLUDE_PATH}
+)
+
+# Link libraries
+target_link_libraries(2comp_time_example PRIVATE
+  ${ESMF_LIBRARY}
+  ${PIOC_LIBRARY}
+  ${PNETCDF_LIBRARY} ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}
+  ${HDF5_HL_LIBRARY} ${HDF5_LIBRARY}
+  MPI::MPI_Fortran
+  MKL::MKL
+  curl xml2 z stdc++
+)
+#==============================================================================
 
 # Optionally show diagnostics
 message(STATUS "NetCDF libraries: ${PNETCDF_LIBRARY} ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}")
