@@ -1,3 +1,4 @@
 pskrips
 *.sif
 examples/2comps/build
+.vscode

@@ -1,8 +1,0 @@
-{
-    "fortran.linter.includePaths": [
-        "/software/mod/modO/Linux.intel.64.intelmpi.default",
-        "${workspaceFolder}/examples/2comps/build",
-        "/Users/home/paulinan/models/coupled_model_apptainer/**"
-    ],
-    "fortran.linter.compiler": "ifort"
-}
