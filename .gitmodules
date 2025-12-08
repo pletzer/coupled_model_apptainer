@@ -1,0 +1,4 @@
+[submodule "pskrips"]
+	path = pskrips
+	url = https://github.com/andrewpauling/pskrips
+	branch = cice
