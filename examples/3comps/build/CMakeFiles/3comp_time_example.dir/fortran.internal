@@ -1,0 +1,6 @@
+# The fortran modules provided by this target.
+provides
+ atm.mod
+ esm.mod
+ ice.mod
+ ocn.mod
