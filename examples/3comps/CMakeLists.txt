@@ -1,6 +1,6 @@
 # CMakeLists.txt — build the ESMF two-component coupling example
 cmake_minimum_required(VERSION 3.18)
-project(ESMF_TwoComponentExample LANGUAGES Fortran)
+project(ESMF_ThreeComponentExample LANGUAGES Fortran)
 
 # --- User configuration section ------------------------------------------
 # Set this to your ESMF installation path if not found automatically.
