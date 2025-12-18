@@ -1,5 +1,5 @@
 # Two-component coupled example
-i
+
 
 This example shows how to create a 2-component coupled model. 
 Each component lives on a different grid and data are 
@@ -11,10 +11,10 @@ surface net downward shortwave flux (rsns).
 The coupled system advances from 2010-06-01:00:00 to 2010-06-01:01:00 with coupling occurring every 15 minutes. 
 
 
-| component | import  | export |
-| :-------- | :------ | :------|
-| atm       | sst     | pmsl, rsns |
-| ocn       | pmsl, rsns | sst  |
+| component | import     | export     |
+| :-------- | :------    | :------    |
+| atm       | sst        | pmsl, rsns |
+| ocn       | pmsl, rsns | sst        |
 
 
 In addition to atm and ocn, there is a third component (esm), which handles the coupling.
