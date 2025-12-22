@@ -319,7 +319,7 @@ module ATM
       ij(2) = j
       do i = 1, maxCornerIndex(1) - 1
         ij(1) = i
-        !call ESMF_GridGetCoord(grid, staggerloc=ESMF_STAGGERLOC_CENTER, index=ij, coord=coords, rc=rc)
+        call ESMF_GridGetCoord(grid, staggerloc=ESMF_STAGGERLOC_CENTER, index=ij, coord=coords, rc=rc)
         !xmid = coords(1)
         !ymid = coords(2)
         !error = error + abs( dataPtr(i, j) - xmid*(ymid + 2*xmid) )
