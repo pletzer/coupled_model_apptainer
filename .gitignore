@@ -1,0 +1,5 @@
+*.sif
+examples/2comps/build
+examples/3comps/build
+.vscode
+*.i90
