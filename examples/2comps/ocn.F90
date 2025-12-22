@@ -135,7 +135,9 @@ module OCN
     type(ESMF_Grid)         :: gridOut
 
     real(8) :: minCornerCoord(2), maxCornerCoord(2)
-    integer :: maxIndexAtm(2), maxIndexOcn(2), unit_num
+    integer :: maxIndexAtm(2), maxIndexOcn(2), unit_num, i, j
+    real(8) :: dx, dy, xmid, ymid
+    real(8), pointer :: dataPtr(:, :)
 
     namelist /domain/ minCornerCoord, maxCornerCoord
     namelist /ocn/ maxIndexOcn
@@ -219,6 +221,19 @@ module OCN
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    ! set the field to some values
+    call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+    dx = (maxCornerCoord(2) - minCornerCoord(2))/maxIndexOcn(2)
+    dy = (maxCornerCoord(1) - minCornerCoord(1))/maxIndexOcn(1)
+    do j = 1, maxIndexOcn(1)
+      ymid = minCornerCoord(1) + (j - 1 + 0.5)*dy
+      do i = 1, maxIndexOcn(2)
+        xmid = minCornerCoord(2) + (i - 1 + 0.5)*dx
+        ! fill in some values. The grid was created with ESMF_STAGGERLOC_CENTER
+        dataPtr(i, j) = xmid*(ymid + 2*xmid)
+      enddo
+    enddo
 
   end subroutine
 
