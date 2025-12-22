@@ -224,11 +224,12 @@ module OCN
 
     ! set the field to some values
     call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
-    dx = (maxCornerCoord(2) - minCornerCoord(2))/maxIndexOcn(2)
-    dy = (maxCornerCoord(1) - minCornerCoord(1))/maxIndexOcn(1)
-    do j = 1, maxIndexOcn(1)
+    ! maxIndexOcn is the number of nodes
+    dx = (maxCornerCoord(2) - minCornerCoord(2)) / (maxIndexOcn(2) - 1)
+    dy = (maxCornerCoord(1) - minCornerCoord(1)) / (maxIndexOcn(1) - 1)
+    do j = 1, maxIndexOcn(1) - 1
       ymid = minCornerCoord(1) + (j - 1 + 0.5)*dy
-      do i = 1, maxIndexOcn(2)
+      do i = 1, maxIndexOcn(2) - 1
         xmid = minCornerCoord(2) + (i - 1 + 0.5)*dx
         ! fill in some values. The grid was created with ESMF_STAGGERLOC_CENTER
         dataPtr(i, j) = xmid*(ymid + 2*xmid)

@@ -127,7 +127,7 @@ module ATM
     type(ESMF_Grid)         :: gridIn
     type(ESMF_Grid)         :: gridOut
  
-    real(8) :: minCornerCoord(2), maxCornerCoord(2)
+    real(ESMF_KIND_R8) :: minCornerCoord(2), maxCornerCoord(2)
     integer :: maxIndexOcn(2), maxIndexAtm(2), unit_num 
                                                                                                                                                                                                               
     namelist /domain/ minCornerCoord, maxCornerCoord 
@@ -257,6 +257,11 @@ module ATM
     type(ESMF_Clock)            :: clock
     type(ESMF_State)            :: importState, exportState
     character(len=160)          :: msgString
+    integer :: i, j, ij(2), minCornerIndex(2), maxCornerIndex(2)
+    type(ESMF_Field) :: sstField
+    type(ESMF_Grid) :: grid
+    real(ESMF_KIND_R8) :: xmid, ymid, coords(2), error
+    real(ESMF_KIND_R8), pointer :: dataPtr(:, :)
 
 #define NUOPC_TRACE__OFF
 #ifdef NUOPC_TRACE
@@ -303,6 +308,26 @@ module ATM
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    ! check the sst field
+    call ESMF_StateGet(importState, field=sstField, itemName="sst", rc=rc)
+    call ESMF_FieldGet(sstField, farrayPtr=dataPtr, rc=rc)
+    call ESMF_FieldGet(sstField, grid=grid, rc=rc)
+    call ESMF_GridGet(grid, tile=1, staggerLoc=ESMF_STAGGERLOC_CORNER, minIndex=minCornerIndex, maxIndex=maxCornerIndex, rc=rc)
+    error = 0_8
+    do j = 1, maxCornerIndex(2) - 1
+      ij(2) = j
+      do i = 1, maxCornerIndex(1) - 1
+        ij(1) = i
+        !call ESMF_GridGetCoord(grid, staggerloc=ESMF_STAGGERLOC_CENTER, index=ij, coord=coords, rc=rc)
+        !xmid = coords(1)
+        !ymid = coords(2)
+        !error = error + abs( dataPtr(i, j) - xmid*(ymid + 2*xmid) )
+      enddo
+    enddo
+
+    print *,' remapping error in ATM: ', error
+
 
 #ifdef NUOPC_TRACE
     call ESMF_TraceRegionExit("ATM:Advance")
