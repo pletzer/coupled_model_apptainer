@@ -260,7 +260,7 @@ module ATM
     integer :: i, j, ij(2), minCornerIndex(2), maxCornerIndex(2)
     type(ESMF_Field) :: sstField
     type(ESMF_Grid) :: grid
-    real(ESMF_KIND_R8) :: xmid, ymid, coords(2), error
+    real(ESMF_KIND_R8) :: xmid, ymid, xy00(2), xy10(2), xy01(2), error
     real(ESMF_KIND_R8), pointer :: dataPtr(:, :)
 
 #define NUOPC_TRACE__OFF
@@ -319,7 +319,8 @@ module ATM
       ij(2) = j
       do i = 1, maxCornerIndex(1) - 1
         ij(1) = i
-        call ESMF_GridGetCoord(grid, staggerloc=ESMF_STAGGERLOC_CENTER, index=ij, coord=coords, rc=rc)
+        ! this causes a segfault
+        !call ESMF_GridGetCoord(grid, staggerloc=ESMF_STAGGERLOC_CORNER, index=ij, coord=xy00, rc=rc)
         !xmid = coords(1)
         !ymid = coords(2)
         !error = error + abs( dataPtr(i, j) - xmid*(ymid + 2*xmid) )
