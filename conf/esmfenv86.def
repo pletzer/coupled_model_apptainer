@@ -71,6 +71,7 @@ From: intel/oneapi-hpckit:devel-ubuntu22.04
     apt -y install tcsh
     apt -y install file
     apt -y install vim
+    apt -y install valgrind valgrind-mpi
 
     # versions
     HDF5_VERSION="1.12.2"
