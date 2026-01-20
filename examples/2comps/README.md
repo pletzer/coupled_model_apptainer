@@ -25,7 +25,7 @@ In addition to atm and ocn, there is a third component (esm), which handles the 
 ```
 mkdir build
 cd build
-apptainer shell /nesi/nobackup/nesi99999/pletzera/sifs/esmfenv86.sif
+apptainer shell -B /nesi/nobackup /nesi/nobackup/nesi99999/pletzera/sifs/esmfenv86.sif
 cmake ..
 make
 ```
