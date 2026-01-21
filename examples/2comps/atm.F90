@@ -1,3 +1,4 @@
+! atm.F90
 !==============================================================================
 ! Earth System Modeling Framework
 ! Copyright (c) 2002-2025, University Corporation for Atmospheric Research,
@@ -127,7 +128,7 @@ module ATM
     type(ESMF_Grid)         :: gridIn
     type(ESMF_Grid)         :: gridOut
  
-    real(ESMF_KIND_R8) :: minCornerCoord(2), maxCornerCoord(2)
+    real(8) :: minCornerCoord(2), maxCornerCoord(2)
     integer :: maxIndexOcn(2), maxIndexAtm(2), unit_num 
                                                                                                                                                                                                               
     namelist /domain/ minCornerCoord, maxCornerCoord 
@@ -136,9 +137,30 @@ module ATM
                                                                                                                                                                                                               
     rc = ESMF_SUCCESS 
     ! read the namelist 
-    open(newunit=unit_num, file='2comp_time_example.nml', status='old', iostat=rc)     
+    open(newunit=unit_num, file='2comp_time_example.nml', status='old', iostat=rc)
+    if (rc /= 0) then 
+      print*,'cannot open 2comp_time_example.nml'
+      return
+    endif
+
     read(unit_num, nml=domain, iostat=rc) 
+    if (rc /= 0) then 
+      print*,'cannot read domain namelist section'
+      return
+    endif
+
+    read(unit_num, nml=atm, iostat=rc)
+    if (rc /= 0) then 
+      print*,'cannot read atm namelist section'
+      return
+    endif
+
     read(unit_num, nml=ocn, iostat=rc)
+    if (rc /= 0) then 
+      print*,'cannot read ocn namelist section'
+      return
+    endif
+
     close(unit_num)
 
     ! query for importState and exportState
@@ -149,11 +171,14 @@ module ATM
       file=__FILE__)) &
       return  ! bail out
 
+    print*,'ATM: maxIndexOcn = ', maxIndexOcn, ' maxIndexAtm = ', maxIndexAtm
+
     ! create a Grid object for Fields
     gridIn = ESMF_GridCreateNoPeriDimUfrm(maxIndex=maxIndexOcn, &
       minCornerCoord=minCornerCoord, &
       maxCornerCoord=maxCornerCoord, &
-      coordSys=ESMF_COORDSYS_CART, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &
+      coordSys=ESMF_COORDSYS_CART, &
+      staggerLocList=(/ESMF_STAGGERLOC_CORNER, ESMF_STAGGERLOC_CENTER/), &
       rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -163,7 +188,8 @@ module ATM
     gridOut = ESMF_GridCreateNoPeriDimUfrm(maxIndex=maxIndexAtm, &
       minCornerCoord=minCornerCoord, &                                                                                                                                                                        
       maxCornerCoord=maxCornerCoord, &                                                                                                                                                                        
-      coordSys=ESMF_COORDSYS_CART, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &                                                                                                                               
+      coordSys=ESMF_COORDSYS_CART, &
+      staggerLocList=(/ESMF_STAGGERLOC_CORNER, ESMF_STAGGERLOC_CENTER/), &                                                                                                                               
       rc=rc)                                                                                                                                                                                                  
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &                                                                                                                                          
       line=__LINE__, &                                                                                                                                                                                        
@@ -257,11 +283,14 @@ module ATM
     type(ESMF_Clock)            :: clock
     type(ESMF_State)            :: importState, exportState
     character(len=160)          :: msgString
-    integer :: i, j, ij(2), minCornerIndex(2), maxCornerIndex(2)
-    type(ESMF_Field) :: sstField
+
+    type(ESMF_Field) :: field
     type(ESMF_Grid) :: grid
-    real(ESMF_KIND_R8) :: xmid, ymid, xy00(2), xy10(2), xy01(2), error
-    real(ESMF_KIND_R8), pointer :: dataPtr(:, :)
+    real(8), pointer :: xPtr(:), yPtr(:), dataPtr(:, :)
+    real(8) :: x, y, error
+    integer :: xLBound(1), xUBound(1), yLBound(1), yUBound(1), i, j
+    logical :: isConnected
+    integer :: localDECount, lDE
 
 #define NUOPC_TRACE__OFF
 #ifdef NUOPC_TRACE
@@ -309,32 +338,80 @@ module ATM
       file=__FILE__)) &
       return  ! bail out
 
-    ! check the sst field
-    call ESMF_StateGet(importState, field=sstField, itemName="sst", rc=rc)
-    call ESMF_FieldGet(sstField, farrayPtr=dataPtr, rc=rc)
-    call ESMF_FieldGet(sstField, grid=grid, rc=rc)
-    call ESMF_GridGet(grid, tile=1, staggerLoc=ESMF_STAGGERLOC_CORNER, minIndex=minCornerIndex, maxIndex=maxCornerIndex, rc=rc)
+    ! checking if the imported field is connected
+    isConnected = NUOPC_IsConnected(importState, fieldName="sst", rc=rc)
+    if (.not. isConnected) then
+      rc = ESMF_SUCCESS
+      print*,'ERROR import state sst is not connected'
+      return
+    endif
+
+    ! checking the imported fields
+    call ESMF_StateGet(importState, itemName="sst", field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+    call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+
+    call ESMF_FieldGet(field, grid=grid, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+    ! get the grid coordinates. THIS CRASHES!
+    xPtr => null()
+    xLBound = 0
+    xUBound = 0
+    call ESMF_GridGetCoord(grid, coordDim=1, localDE=0, &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=xPtr, &
+                          computationalLBound=xLBound, &
+                          computationalUBound=xUBound, &
+                          rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+    yPtr => null()
+    yLBound = 0
+    yUBound = 0
+    call ESMF_GridGetCoord(grid, coordDim=2, localDE=0, &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=yPtr, &
+                          computationalLBound=yLBound, &
+                          computationalUBound=yUBound, &
+                          rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+
+    ! check sst
     error = 0_8
-    do j = 1, maxCornerIndex(2) - 1
-      ij(2) = j
-      do i = 1, maxCornerIndex(1) - 1
-        ij(1) = i
-        ! this causes a segfault
-        !call ESMF_GridGetCoord(grid, staggerloc=ESMF_STAGGERLOC_CORNER, index=ij, coord=xy00, rc=rc)
-        !xmid = coords(1)
-        !ymid = coords(2)
-        !error = error + abs( dataPtr(i, j) - xmid*(ymid + 2*xmid) )
+    do j = yLBound(1), yUBound(1)
+      y = yPtr(j)
+      do i = xLBound(1), xUBound(1)
+        x = xPtr(i)
+        error = error + abs(dataPtr(i,j) - x*(y + 2*x))
       enddo
     enddo
+    print *,'ATM: sst regridding error = ', error
+    if (error > 1.e-3) print *, dataPtr
 
-    print *,' remapping error in ATM: ', error
 
 
 #ifdef NUOPC_TRACE
     call ESMF_TraceRegionExit("ATM:Advance")
 #endif
 
-  end subroutine
+  end subroutine Advance
 
   !-----------------------------------------------------------------------------
 

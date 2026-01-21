@@ -1,3 +1,4 @@
+! ocn.F90
 !==============================================================================
 ! Earth System Modeling Framework
 ! Copyright (c) 2002-2025, University Corporation for Atmospheric Research,
@@ -24,6 +25,8 @@ module OCN
   private
 
   public SetServices
+
+  character(len=*), parameter :: label_Initialize = 'Initialize'
 
   !-----------------------------------------------------------------------------
   contains
@@ -55,6 +58,15 @@ module OCN
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    ! Specialization for the Initialize phase
+    call NUOPC_CompSpecialize(model, specLabel=label_Initialize, &
+      specRoutine=Initialize, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
     call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
       specRoutine=SetClock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -71,6 +83,61 @@ module OCN
   end subroutine
 
   !-----------------------------------------------------------------------------
+
+  subroutine Initialize(model, rc)
+    type(ESMF_GridComp)  :: model
+    integer, intent(out) :: rc
+
+    ! local variables
+    type(ESMF_State)        :: exportState
+    type(ESMF_Field)        :: sstField
+    real(8), pointer        :: sstData(:,:), xPtr(:), yPtr(:)
+    type(ESMF_Grid) :: grid
+    integer                 :: i, j, localElm(2), xLBound(1), xUBound(1), yLBound(1), yUBound(1)
+    real(8) :: x, y
+
+    print *,'***** Start of Initialize ******'
+    
+    rc = ESMF_SUCCESS
+
+    call NUOPC_ModelGet(model, exportState=exportState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return
+
+    ! get the field
+    call ESMF_StateGet(exportState, itemName="sst", field=sstField, rc=rc)
+
+    ! get the array pointer 
+    call ESMF_FieldGet(sstField, farrayPtr=sstData, rc=rc)
+
+    ! get the grid
+    call ESMF_FieldGet(sstField, grid=grid, rc=rc)
+
+    ! get the x coordinates
+    call ESMF_GridGetCoord(grid, coordDim=1, localDE=0, &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=xPtr, &
+                          computationalLBound=xLBound, computationalUBound=xUBound, &
+                          rc=rc)
+
+    ! get the y coordinates
+    call ESMF_GridGetCoord(grid, coordDim=2, localDE=0, &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=yPtr, &
+                          computationalLBound=yLBound, computationalUBound=yUBound, &
+                          rc=rc)
+    ! set the field
+    do j = yLBound(1), yUBound(1)
+      y = yPtr(j)
+      do i = xLBound(1), xUBound(1)
+        x = xPtr(i)
+        sstData(i, j) = x*(y + 2*x)
+      enddo
+    enddo
+
+  end subroutine
+
+!----------------------------------------------------------------------------
 
   subroutine Advertise(model, rc)
     type(ESMF_GridComp)  :: model
@@ -135,9 +202,7 @@ module OCN
     type(ESMF_Grid)         :: gridOut
 
     real(8) :: minCornerCoord(2), maxCornerCoord(2)
-    integer :: maxIndexAtm(2), maxIndexOcn(2), unit_num, i, j
-    real(8) :: dx, dy, xmid, ymid
-    real(8), pointer :: dataPtr(:, :)
+    integer :: maxIndexAtm(2), maxIndexOcn(2), unit_num
 
     namelist /domain/ minCornerCoord, maxCornerCoord
     namelist /ocn/ maxIndexOcn
@@ -222,19 +287,7 @@ module OCN
       file=__FILE__)) &
       return  ! bail out
 
-    ! set the field to some values
-    call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
-    ! maxIndexOcn is the number of nodes
-    dx = (maxCornerCoord(2) - minCornerCoord(2)) / (maxIndexOcn(2) - 1)
-    dy = (maxCornerCoord(1) - minCornerCoord(1)) / (maxIndexOcn(1) - 1)
-    do j = 1, maxIndexOcn(1) - 1
-      ymid = minCornerCoord(1) + (j - 1 + 0.5)*dy
-      do i = 1, maxIndexOcn(2) - 1
-        xmid = minCornerCoord(2) + (i - 1 + 0.5)*dx
-        ! fill in some values. The grid was created with ESMF_STAGGERLOC_CENTER
-        dataPtr(i, j) = xmid*(ymid + 2*xmid)
-      enddo
-    enddo
+      print*,'*****. End of Realize. *****'
 
   end subroutine
 
@@ -287,6 +340,12 @@ module OCN
     type(ESMF_TimeInterval)     :: timeStep
     character(len=160)          :: msgString
 
+    type(ESMF_Field) :: field
+    type(ESMF_Grid) :: grid
+    real(8), pointer :: dataPtr(:, :), xPtr(:), yPtr(:)
+    real(8) x, y
+    integer :: xLBound(1), xUBound(1), yLBound(1), yUBound(1), i, j
+
 #define NUOPC_TRACE__OFF
 #ifdef NUOPC_TRACE
     call ESMF_TraceRegionEnter("OCN:Advance")
@@ -301,6 +360,28 @@ module OCN
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    call ESMF_StateGet(exportState, itemName="sst", field=field, rc=rc)
+    call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+    call ESMF_FieldGet(field, grid=grid, rc=rc)
+
+    ! get the grid coordinates
+    call ESMF_GridGetCoord(grid, coordDim=1, localDE=0, &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=xPtr, &
+                          computationalLBound=xLBound, computationalUBound=xUBound, &
+                          rc=rc)
+    call ESMF_GridGetCoord(grid, coordDim=2, localDE=0, &
+                          staggerloc=ESMF_STAGGERLOC_CENTER, farrayPtr=yPtr, &
+                          computationalLBound=yLBound, computationalUBound=yUBound, &
+                          rc=rc)
+    ! set the field
+    do j = yLBound(1), yUBound(1)
+      y = yPtr(j)
+      do i = xLBound(1), xUBound(1)
+        x = xPtr(i)
+        dataPtr(i, j) = x*(y + 2*x)
+      enddo
+    enddo
 
     ! HERE THE MODEL ADVANCES: currTime -> currTime + timeStep
 
