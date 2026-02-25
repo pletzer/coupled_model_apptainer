@@ -76,9 +76,9 @@ To add new connectors (e.g., ICE → OCN), edit this file.
 
 ### Connector: conn.F90
 
-Implements field remapping between components.
-Uses conservative regridding
-Handles all inter-component exchanges
+ * Implements field remapping between components
+ * Uses conservative regridding
+ * Handles all inter-component exchanges
 At present, a single connector supports all exchanges because they share the same remapping method.
 
 ### Model Components
