@@ -1,0 +1,48 @@
+name: Apptainer Build Deploy
+
+on:
+  pull_request:
+  push:
+
+env:
+        CONTAINER_NAME: nzesmenv
+
+jobs:
+  build-test-container:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    name: Build Container
+    steps:
+
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 35000
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+
+      - name: Install Apptainer
+        run: |
+          echo "Free space"
+          df -h
+          sudo apt update -y
+          sudo apt install -y wget
+          wget https://github.com/apptainer/apptainer/releases/download/v1.2.4/apptainer_1.2.4_amd64.deb
+          sudo apt install -y ./apptainer_1.2.4_amd64.deb
+
+      - uses: actions/checkout@v3
+
+      - name: Build Container
+        working-directory: ./conf
+        run: |
+          sudo apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
+
+      - name: Login and deploy
+        working-directory: ./conf
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | apptainer remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
+          apptainer push ${CONTAINER_NAME}.sif oras://ghcr.io/${GITHUB_REPOSITORY}_${CONTAINER_NAME}:
