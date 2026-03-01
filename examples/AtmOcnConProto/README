@@ -28,7 +28,7 @@ Description:
 
 Build:
   - Set environment variable ESMFMKFILE to point to the esmf.mk of your ESMF
-    installation.
+    installation. Type 	`source sourceme.sh` to set ESMFMKFILE.
   - make
   
 Execution:

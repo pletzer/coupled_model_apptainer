@@ -2,11 +2,10 @@
 
 
 This example shows how to create a 2-component coupled model. 
-Each component lives on a different grid and data are 
-automatically regridded onto the target component's grid. 
-
-The data exchanged are sea surface temperature, air pressure at sea_level (pmsl) and
-surface net downward shortwave flux (rsns). 
+Each component (atm and ocn) has its own MPI communicator. Grid 
+data are distributed across processes. The atm and ocn grids occupy the 
+same space; however, each component has its own grid. Data are exchanged
+when the components are advanced. Remapping occurs automatically.   
 
 The coupled system advances from 2010-06-01:00:00 to 2010-06-01:01:00 with coupling occurring every 15 minutes. 
 
@@ -34,7 +33,7 @@ make
 
 Under Apptainer:
 ```
-mpiexec -n 4 ./2comp_time_example
+mpiexec -n 4 ./esmfApp
 ```
 This will generate `PET*.ESMF_LogFile` files.
 

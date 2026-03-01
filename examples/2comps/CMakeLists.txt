@@ -30,47 +30,24 @@ set(ESMF_MOD_DIR "/software/mod/modO/Linux.intel.64.intelmpi.default")
 set(ESMF_INC_DIR "/software/include")
 
 # -------------------------------------------------------------------------
-# Build 2comp_example
-add_executable(2comp_example
-  2comp_example.f90
-)
-
-# Include directories
-target_include_directories(2comp_example PRIVATE
-  ${ESMF_INC_DIR}
-  ${ESMF_MOD_DIR}
-  ${MPI_Fortran_INCLUDE_PATH}
-)
-
-# Link libraries
-target_link_libraries(2comp_example PRIVATE
-  ${ESMF_LIBRARY}
-  ${PIOC_LIBRARY}
-  ${PNETCDF_LIBRARY} ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}
-  ${HDF5_HL_LIBRARY} ${HDF5_LIBRARY}
-  MPI::MPI_Fortran 
-  MKL::MKL
-  curl xml2 z stdc++
-)
-# -------------------------------------------------------------------------
-# Build 2comp_time_example
+# Build esmfApp
 
 # copy the namelist 
-configure_file("2comp_time_example.nml" "2comp_time_example.nml" COPYONLY) 
-add_executable(2comp_time_example
+#configure_file("2comp_time_example.nml" "2comp_time_example.nml" COPYONLY) 
+add_executable(esmfApp
   esmfApp.F90 esmf.F90 
-  atm.F90 ocn.F90
+  atm.F90 ocn.F90 conn.F90 vtk_mod.F90
 )
 
 # Include directories
-target_include_directories(2comp_time_example PRIVATE
+target_include_directories(esmfApp PRIVATE
   ${ESMF_INC_DIR}
   ${ESMF_MOD_DIR}
   ${MPI_Fortran_INCLUDE_PATH}
 )
 
 # Link libraries
-target_link_libraries(2comp_time_example PRIVATE
+target_link_libraries(esmfApp PRIVATE
   ${ESMF_LIBRARY}
   ${PIOC_LIBRARY}
   ${PNETCDF_LIBRARY} ${NETCDFF_LIBRARY} ${NETCDF_LIBRARY}
@@ -88,10 +65,4 @@ message(STATUS "PIOC library: ${PIOC_LIBRARY}")
 message(STATUS "ESMF include: ${ESMF_INC_DIR}")
 message(STATUS "ESMF module:  ${ESMF_MOD_DIR}")
 message(STATUS "MPI library:  ${MPI_Fortran_LIBRARIES}")
-
-# -------------------------------------------------------------------------
-# Build type and flags
-set_target_properties(2comp_example PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules
-)
 
