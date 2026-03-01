@@ -29,7 +29,7 @@ Currently, a single connector is used because all exchanges use conservative rem
 ```bash
 mkdir build
 cd build
-apptainer --bind /nesi/nobackup/ shell /nesi/nobackup/nesi99999/pletzera/sifs/esmfenv86.sif
+apptainer shell --bind /nesi/nobackup/ /nesi/nobackup/nesi99999/pletzera/sifs/esmfenv86.sif
 cmake ..
 make
 ```
