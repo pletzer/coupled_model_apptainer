@@ -5,7 +5,7 @@ on:
   push:
 
 env:
-        CONTAINER_NAME: esmfenv86
+  CONTAINER_NAME: esmfenv86
 
 jobs:
   build-test-container:
@@ -15,34 +15,65 @@ jobs:
       packages: write
 
     name: Build Container
+
     steps:
 
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 35000
+          root-reserve-mb: 2000
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+
+      - name: Show disk space (before)
+        run: df -h
+
+      - uses: actions/checkout@v3
 
       - name: Install Apptainer
         run: |
-          echo "Free space"
-          df -h
           sudo apt update -y
           sudo apt install -y wget
           wget https://github.com/apptainer/apptainer/releases/download/v1.2.4/apptainer_1.2.4_amd64.deb
           sudo apt install -y ./apptainer_1.2.4_amd64.deb
 
-      - uses: actions/checkout@v3
+      # 🔥 Critical: move cache + tmp to large workspace disk
+      - name: Configure Apptainer cache
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/.apptainer-cache
+          mkdir -p $GITHUB_WORKSPACE/.apptainer-tmp
+          echo "APPTAINER_CACHEDIR=$GITHUB_WORKSPACE/.apptainer-cache" >> $GITHUB_ENV
+          echo "APPTAINER_TMPDIR=$GITHUB_WORKSPACE/.apptainer-tmp" >> $GITHUB_ENV
+
+      - name: Show disk space (after setup)
+        run: df -h
 
       - name: Build Container
         working-directory: ./conf
         run: |
           apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
 
-      - name: Login and deploy
+      - name: Clean Apptainer cache
+        run: apptainer cache clean --force
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+          apptainer remote login \
+            -u ${{ github.actor }} \
+            --password-stdin \
+            oras://ghcr.io
+
+      - name: Push container to GHCR
         working-directory: ./conf
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | apptainer remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-          apptainer push ${CONTAINER_NAME}.sif oras://ghcr.io/${GITHUB_REPOSITORY}_${CONTAINER_NAME}:
+          apptainer push \
+            ${CONTAINER_NAME}.sif \
+            oras://ghcr.io/${{ github.repository }}/${CONTAINER_NAME}:latest
+
+      - name: Show disk space (end)
+        run: df -h
+
