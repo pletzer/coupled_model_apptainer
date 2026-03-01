@@ -35,15 +35,15 @@ contains
         write(iu, '(A)') 'ASCII'
         write(iu, '(A)') 'DATASET STRUCTURED_GRID'
         ! need at least two z levels to have a single cell layer
-        write(iu, '(A,I4,A,I4,A,I4)') 'DIMENSIONS ', ubCenter(1) - lbCenter(1) + 1, ' ', ubCenter(2) - lbCenter(2) + 1, ' ', 1
-        write(iu, '(A,I4,A)') 'POINTS ', npoints, ' DOUBLE'
+        write(iu, '(A,I8,A,I8,A,I8)') 'DIMENSIONS ', ubCenter(1) - lbCenter(1) + 1, ' ', ubCenter(2) - lbCenter(2) + 1, ' ', 1
+        write(iu, '(A,I8,A)') 'POINTS ', npoints, ' DOUBLE'
         do j = lbCenter(2), ubCenter(2)
             do i = lbCenter(1), ubCenter(1)
                 write(iu, '(E20.12, A, E20.12, A, E20.12)') xCenterPtr(i, j), ' ', yCenterPtr(i, j), ' ', 0.0
             enddo
         enddo
 
-        write(iu, '(A,I4)') 'POINT_DATA ', npoints
+        write(iu, '(A,I8)') 'POINT_DATA ', npoints
         write(iu, '(A)') 'SCALARS data double 1'
         write(iu, '(A)') 'LOOKUP_TABLE default'
         do j = lbCenter(2), ubCenter(2)
