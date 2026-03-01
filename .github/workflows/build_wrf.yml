@@ -39,7 +39,7 @@ jobs:
       - name: Build Container
         working-directory: ./conf
         run: |
-          sudo apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
+          apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
 
       - name: Login and deploy
         working-directory: ./conf
