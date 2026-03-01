@@ -5,16 +5,16 @@ on:
   push:
 
 env:
-        CONTAINER_NAME: wrf
+  CONTAINER_NAME: wrf
 
 jobs:
   build-test-container:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
 
-    name: Build Container
     steps:
 
       - name: Maximize build space
@@ -25,24 +25,46 @@ jobs:
           remove-dotnet: 'true'
           remove-android: 'true'
 
-      - name: Install Apptainer
-        run: |
-          echo "Free space"
-          df -h
-          sudo apt update -y
-          sudo apt install -y wget
-          wget https://github.com/apptainer/apptainer/releases/download/v1.2.4/apptainer_1.2.4_amd64.deb
-          sudo apt install -y ./apptainer_1.2.4_amd64.deb
-
       - uses: actions/checkout@v3
 
-      - name: Build Container
+      - name: Install Apptainer
+        run: |
+          sudo apt update -y
+          sudo apt install -y wget uidmap squashfs-tools
+          wget https://github.com/apptainer/apptainer/releases/download/v1.2.4/apptainer_1.2.4_amd64.deb
+          sudo apt install -y ./apptainer_1.2.4_amd64.deb
+          apptainer version
+
+      - name: Prepare cache on large workspace volume
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/apptainer-cache
+          mkdir -p $GITHUB_WORKSPACE/apptainer-tmp
+
+      - name: Build container
         working-directory: ./conf
         run: |
+          export APPTAINER_CACHEDIR=$GITHUB_WORKSPACE/apptainer-cache
+          export APPTAINER_TMPDIR=$GITHUB_WORKSPACE/apptainer-tmp
+
+          echo "Using cache: $APPTAINER_CACHEDIR"
+          echo "Using tmp:   $APPTAINER_TMPDIR"
+          df -h
+
           apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
 
-      - name: Login and deploy
+      - name: Clean Apptainer cache
+        run: |
+          export APPTAINER_CACHEDIR=$GITHUB_WORKSPACE/apptainer-cache
+          apptainer cache clean --force
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+          apptainer remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
+
+      - name: Push container
         working-directory: ./conf
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | apptainer remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-          apptainer push ${CONTAINER_NAME}.sif oras://ghcr.io/${GITHUB_REPOSITORY}_${CONTAINER_NAME}:
+          IMAGE=oras://ghcr.io/${{ github.repository }}/${CONTAINER_NAME}:latest
+          apptainer push ${CONTAINER_NAME}.sif ${IMAGE}
+
