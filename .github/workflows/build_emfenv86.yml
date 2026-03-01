@@ -68,7 +68,7 @@ jobs:
           echo "Tmp dir: $APPTAINER_TMPDIR"
           df -h 
 
-          apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
+          apptainer build --fakeroot ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
 
       - name: Clean Apptainer cache
         run: apptainer cache clean --force
