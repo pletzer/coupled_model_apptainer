@@ -356,7 +356,7 @@ module ICE
     call ESMF_VMGet(compVM, mpiCommunicator=comm, rc=rc)
 
     call MPI_Comm_rank(comm, pe, rc)
-    write(filename, '(A,I4.4,A,I4.4,A)') 'ice_', pe, 'pe_', istep,'.vtk'
+    write(filename, '(A,I4.4,A,I4.4,A)') 'ice_pmsl_', pe, 'pe_', istep,'.vtk'
     call write_vtk(field_pmsl, filename)
 
     chksum = 0

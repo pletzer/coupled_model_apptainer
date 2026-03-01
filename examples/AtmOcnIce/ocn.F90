@@ -266,7 +266,6 @@ module OCN
     type(ESMF_TimeInterval)     :: timeStep
     character(len=160)          :: msgString
     integer :: istep = 0
-    type(ESMF_Field) :: field_sst
     type(ESMF_Grid) :: grid
     real(8), pointer :: sstPtr(:, :), xCenterPtr(:, :), yCenterPtr(:, :)
     integer :: i, j, lbCenter(2), ubCenter(2)
@@ -274,7 +273,7 @@ module OCN
     type(ESMF_VM) :: compVM
     character(len=32) :: filename
     integer :: pe, comm
-    type(ESMF_Field) :: field_pmsl
+    type(ESMF_Field) :: field_pmsl, field_sst
     real(8) :: chksum
     real(8), pointer :: dataPtr(:, :)
 
@@ -286,6 +285,9 @@ module OCN
     ! query for clock, importState and exportState
     call NUOPC_ModelGet(model, modelClock=clock, importState=importState, &
       exportState=exportState, rc=rc)
+
+    ! Get the import field PMSL
+    call ESMF_StateGet(importState,  itemName='pmsl', field=field_pmsl, rc=rc)
 
     ! update the export SST
     call ESMF_StateGet(exportState, itemName='sst', field=field_sst, rc=rc)
@@ -345,8 +347,10 @@ module OCN
     call ESMF_VMGet(compVM, mpiCommunicator=comm, rc=rc)
 
     call MPI_Comm_rank(comm, pe, rc)
-    write(filename, '(A,I4.4,A,I4.4,A)') 'ocn_', pe, 'pe_', istep,'.vtk'
+    write(filename, '(A,I4.4,A,I4.4,A)') 'ocn_pmsl_', pe, 'pe_', istep,'.vtk'
     call write_vtk(field_pmsl, filename)
+    write(filename, '(A,I4.4,A,I4.4,A)') 'ocn_sst_', pe, 'pe_', istep,'.vtk'
+    call write_vtk(field_sst, filename)
 
     chksum = 0
     call ESMF_FieldGet(field_pmsl, farrayPtr=dataPtr, rc=rc)

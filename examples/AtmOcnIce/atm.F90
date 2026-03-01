@@ -270,7 +270,7 @@ module ATM
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_State)            :: importState, exportState
-    type(ESMF_Field)            :: field_sst
+    type(ESMF_Field)            :: field_sst, field_pmsl
     real(8), pointer :: sstPtr(:, :)
     character(len=160)          :: msgString
     integer :: i, j
@@ -312,6 +312,7 @@ module ATM
     ! query for importState
     call NUOPC_ModelGet(model, importState=importState, rc=rc)
     call ESMF_StateGet(importState, itemName='sst', field=field_sst, rc=rc)
+    call ESMF_StateGet(exportState, itemName='pmsl', field=field_pmsl, rc=rc)
 
     ! Get the VM associated with the component
     call ESMF_GridCompGet(model, vm=compVM, rc=rc)
@@ -320,8 +321,10 @@ module ATM
     call ESMF_VMGet(compVM, mpiCommunicator=comm, rc=rc)
 
     call MPI_Comm_rank(comm, pe, rc)
-    write(filename, '(A,I4.4,A,I4.4,A)') 'atm_', pe, 'pe_', istep,'.vtk'
+    write(filename, '(A,I4.4,A,I4.4,A)') 'atm_sst_', pe, 'pe_', istep,'.vtk'
     call write_vtk(field_sst, filename)
+    write(filename, '(A,I4.4,A,I4.4,A)') 'atm_pmsl_', pe, 'pe_', istep,'.vtk'
+    call write_vtk(field_pmsl, filename)
 
     chksum = 0
     call ESMF_FieldGet(field_sst, farrayPtr=dataPtr, rc=rc)
