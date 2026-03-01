@@ -10,13 +10,12 @@ env:
 jobs:
   build-test-container:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
 
     steps:
-
+      # 1️⃣ Maximize build space in workspace
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
@@ -25,46 +24,49 @@ jobs:
           remove-dotnet: 'true'
           remove-android: 'true'
 
-      - uses: actions/checkout@v3
-
+      # 2️⃣ Install Apptainer
       - name: Install Apptainer
         run: |
+          echo "Free space before install"
+          df -h
           sudo apt update -y
-          sudo apt install -y wget uidmap squashfs-tools
+          sudo apt install -y wget
           wget https://github.com/apptainer/apptainer/releases/download/v1.2.4/apptainer_1.2.4_amd64.deb
           sudo apt install -y ./apptainer_1.2.4_amd64.deb
           apptainer version
 
-      - name: Prepare cache on large workspace volume
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/apptainer-cache
-          mkdir -p $GITHUB_WORKSPACE/apptainer-tmp
+      # 3️⃣ Checkout repo
+      - uses: actions/checkout@v3
 
-      - name: Build container
+      # 4️⃣ Build container with sandbox + fakeroot + redirected caches
+      - name: Build Container
         working-directory: ./conf
         run: |
           export APPTAINER_CACHEDIR=$GITHUB_WORKSPACE/apptainer-cache
           export APPTAINER_TMPDIR=$GITHUB_WORKSPACE/apptainer-tmp
+          mkdir -p $APPTAINER_CACHEDIR $APPTAINER_TMPDIR
 
-          echo "Using cache: $APPTAINER_CACHEDIR"
-          echo "Using tmp:   $APPTAINER_TMPDIR"
+          # Optional: redirect apt cache during build (if your .def uses apt commands)
+          export DEBIAN_FRONTEND=noninteractive
+          export APT_CACHE_DIR=$GITHUB_WORKSPACE/apt-cache
+          mkdir -p $APT_CACHE_DIR
+
+          echo "Using Apptainer cache: $APPTAINER_CACHEDIR"
+          echo "Using Apptainer tmp:   $APPTAINER_TMPDIR"
+          echo "Using apt cache:       $APT_CACHE_DIR"
           df -h
 
-          apptainer build --fakeroot ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
+          # Build sandbox first (directory, smaller temp writes)
+          apptainer build --fakeroot --sandbox ${CONTAINER_NAME} ${CONTAINER_NAME}.def
 
-      - name: Clean Apptainer cache
-        run: |
-          export APPTAINER_CACHEDIR=$GITHUB_WORKSPACE/apptainer-cache
-          apptainer cache clean --force
+          # Convert sandbox to final .sif
+          apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}
 
-      - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | \
-          apptainer remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
-
-      - name: Push container
+      # 5️⃣ Login to GHCR and push container
+      - name: Login and deploy
         working-directory: ./conf
         run: |
-          IMAGE=oras://ghcr.io/${{ github.repository }}/${CONTAINER_NAME}:latest
-          apptainer push ${CONTAINER_NAME}.sif ${IMAGE}
-
+          echo ${{ secrets.GITHUB_TOKEN }} | \
+            apptainer remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
+          apptainer push ${CONTAINER_NAME}.sif \
+            oras://ghcr.io/${GITHUB_REPOSITORY}_${CONTAINER_NAME}:latest
