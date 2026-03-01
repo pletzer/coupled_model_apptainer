@@ -258,7 +258,7 @@ module ICE
     ! here: parent Clock and stability timeStep determine actual model timeStep
     !TODO: stabilityTimeStep should be read in from configuation
     !TODO: or computed from internal Grid information
-    call ESMF_TimeIntervalSet(stabilityTimeStep, m=5, rc=rc) ! 5 minute steps
+    call ESMF_TimeIntervalSet(stabilityTimeStep, m=15, rc=rc) ! 15 minute steps
 
     call NUOPC_CompSetClock(model, clock, stabilityTimeStep, rc=rc)
 
