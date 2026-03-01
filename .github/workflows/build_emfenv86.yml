@@ -14,6 +14,12 @@ jobs:
       contents: read
       packages: write
 
+    - name: Debug paths
+      run: |
+        echo "HOME=$HOME"
+        echo "TMPDIR=$TMPDIR"
+        df -h
+
     name: Build Container
 
     steps:
@@ -54,6 +60,14 @@ jobs:
       - name: Build Container
         working-directory: ./conf
         run: |
+          export APPTAINER_CACHEDIR=$GITHUB_WORKSPACE/.apptainer-cache
+          export APPTAINER_TMPDIR=$GITHUB_WORKSPACE/.apptainer-tmp
+          mkdir -p $APPTAINER_CACHEDIR
+          mkdir -p $APPTAINER_TMPDIR
+          echo "Cache dir: $APPTAINER_CACHEDIR"
+          echo "Tmp dir: $APPTAINER_TMPDIR"
+          df -h 
+
           apptainer build ${CONTAINER_NAME}.sif ${CONTAINER_NAME}.def
 
       - name: Clean Apptainer cache
