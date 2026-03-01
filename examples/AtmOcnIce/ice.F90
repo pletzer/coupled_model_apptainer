@@ -123,8 +123,8 @@ module ICE
     pi = acos(-1.0_8)
 
     ! Define the grid
-    nx = 12
-    ny = 24
+    nx = 120
+    ny = 240
 
     ! Create the grid with both CENTER and CORNER stagger locations
     grid = ESMF_GridCreateNoPeriDim( &

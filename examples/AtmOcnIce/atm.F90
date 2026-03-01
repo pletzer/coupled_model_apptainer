@@ -108,8 +108,8 @@ module ATM
     pi = acos(-1._8)
 
     ! Define grid 
-    nx = 24
-    ny = 12
+    nx = 48
+    ny = 24
     xmin = 0.0_8
     xmax = 1.0_8
     ymin = 0.0_8
