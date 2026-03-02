@@ -38,10 +38,10 @@ This assumes the appropriate ESMF-enabled container environment.
 ## Running the Code
 
 ```
-mpiexec -n 6 ./esmApp
+mpiexec -n 16 ./esmApp
 ```
 The domain decompositions are currently hardwired.
-You must run on exactly 6 MPI processes.
+You must run on exactly 16 MPI processes.
 
 ## Code Structure and Extension Guide
 

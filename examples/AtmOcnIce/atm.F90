@@ -117,7 +117,7 @@ module ATM
 
     ! Create the grid with both CENTER and CORNER stagger locations
     grid = ESMF_GridCreateNoPeriDim( &
-          regDecomp=(/1, 2/), &  ! assumes component is running on 2 processors!!!
+          regDecomp=(/3, 4/), &  ! assumes component is running on 2 processors!!!
           coordDep1=(/1, 2/), &  ! 1st coord is 2D and depends on both Grid dim
           coordDep2=(/1, 2/), &
           indexflag=ESMF_INDEX_GLOBAL, &
