@@ -96,7 +96,7 @@ Each component:
 `call write_vtk(field_sst, filename)`
 
 ## Notes and Limitations
- * Fixed MPI layout (6 ranks required)
+ * Fixed MPI layout
  * Structured grids only
  * Conservative interpolation only
  * Minimal field dictionary (manual extensions required)
