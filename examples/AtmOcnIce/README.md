@@ -37,11 +37,29 @@ This assumes the appropriate ESMF-enabled container environment.
 
 ## Running the Code
 
+### Interactive
 ```
 mpiexec -n 6 ./esmApp
 ```
 The domain decompositions are currently hardwired.
 You must run on exactly 6 MPI processes.
+
+### Via SLURM on Mahuika
+
+```
+#!/bin/bash -e
+#SBATCH --job-name=esmApp
+#SBATCH --time 00:05:00
+#SBATCH --ntasks=6
+#SBATCH --nodes=2
+module purge
+export I_MPI_ROOT=/opt/nesi/CS400_centos7_bdw/impi/2021.5.1-intel-compilers-2022.0.2/mpi/2021.5.1
+export PATH=$I_MPI_ROOT/bin:$PATH
+SIFFILE=/nesi/nobackup/nesi99999/pletzera/sifs/esmfenv86.sif
+mpiexec -n ${SLURM_NTASKS} --bind-to none --map-by slot \
+  apptainer exec --bind $I_MPI_ROOT,/nesi/nobackup $SIFFILE \
+  ./esmApp
+```
 
 ## Code Structure and Extension Guide
 
